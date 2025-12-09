@@ -1,3 +1,12 @@
+"""
+Functions to compute distances of gRNA groups from Non-Targeting controls and determine optimal thresholds
+for labeling gRNAs as having an effect or no effect.
+
+Includes:
+- compute_distance: computes Euclidean or Energy distance between gRNA groups and controls.
+- compute_threshold_and_plot_hist: finds threshold minimizing within-group variance and optionally plots histogram.
+"""
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -52,12 +61,32 @@ def compute_distance(features, labels, method="euclidean"):
 
 
 def compute_threshold_and_plot_hist(distance, plot=False, method="euclidean", log1p=False):
-    # Find best threshold minimizing within-group variance
+    """
+    Determine the optimal threshold to separate gRNAs into effect/no effect based on distance.
+
+    Parameters
+    ----------
+    distance : pd.DataFrame
+        DataFrame with distance values per gRNA.
+    plot : bool
+        Whether to plot histogram with threshold.
+    method : str
+        Distance type ('euclidean' or 'energy').
+    log1p : bool
+        Whether to apply log1p transformation before threshold computation.
+
+    Returns
+    -------
+    float
+        Optimal threshold value.
+    """
+    # Flatten and optionally transform distances
     distances = np.sort(np.array(distance).flatten())
     if log1p:
         distances = np.log1p(distances)
     best_threshold, best_total_var = None, np.inf
 
+    # Evaluate thresholds between consecutive distance values
     for i in range(1, len(distances) - 1):
         thr = (distances[i] + distances[i+1]) / 2
         left, right = distances[distances <= thr], distances[distances > thr]
@@ -72,8 +101,6 @@ def compute_threshold_and_plot_hist(distance, plot=False, method="euclidean", lo
         plt.legend()
         plt.title('Distance Distribution')
         plt.xlabel(method.capitalize() + ' Distance')
-
         plt.show()
 
     return best_threshold
-
